@@ -1,14 +1,9 @@
-from src.db.engine import DBSession
-from src.db.models import DBRoom
+from src.operations.interface import DataInterface
 
 
-def read_all_rooms():
-    session = DBSession()
-    rooms = session.query(DBRoom).all()
-    return rooms
+def read_all_rooms(room_interface: DataInterface):
+    return room_interface.read_all()
 
 
-def read_room(room_id: int):
-    session = DBSession()
-    room = session.query(DBRoom).get(room_id)
-    return room
+def read_room(room_id: int, room_interface: DataInterface):
+    return room_interface.read_by_id(room_id)

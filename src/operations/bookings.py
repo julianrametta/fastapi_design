@@ -2,8 +2,7 @@ from datetime import date
 
 from pydantic import BaseModel
 
-from src.db.engine import DBSession
-from src.db.models import DBBooking, DBRoom, to_dict
+from src.operations.interface import DataInterface, DataObject
 
 
 class InvalidDateError(Exception):
@@ -18,21 +17,20 @@ class BookingCreateData(BaseModel):
     price: int
 
 
-def read_all_bookings():
-    session = DBSession()
-    bookings = session.query(DBBooking).all()
-    return [to_dict(c) for c in bookings]
+def read_all_bookings(booking_interface: DataInterface) -> list[DataObject]:
+    return booking_interface.read_all()
 
 
-def read_booking(booking_id: int):
-    session = DBSession()
-    booking = session.query(DBBooking).get(booking_id)
-    return to_dict(booking)
+def read_booking(booking_id: int, booking_interface: DataInterface) -> DataObject:
+    return booking_interface.read_by_id(booking_id)
 
 
-def create_booking(data: BookingCreateData):
-    session = DBSession()
-    room = session.query(DBRoom).get(data.room_id)
+def create_booking(
+    data: BookingCreateData,
+    booking_interface: DataInterface,
+    room_interface: DataInterface,
+) -> DataObject:
+    room = room_interface.read_by_id(data.room_id)
 
     days = (data.to_date - data.from_date).days
 
@@ -40,16 +38,10 @@ def create_booking(data: BookingCreateData):
         raise InvalidDateError("Invalid dates.")
 
     booking_dict = data.dict()
-    booking_dict["price"] = days * room.price
-    booking = DBBooking(**booking_dict)
-    session.add(booking)
-    session.commit()
-    return to_dict(booking)
+    booking_dict["price"] = days * room["price"]
+
+    return booking_interface.create(booking_dict)
 
 
-def delete_booking(booking_id: int):
-    session = DBSession()
-    booking = session.query(DBBooking).get(booking_id)
-    session.delete(booking)
-    session.commit()
-    return to_dict(booking)
+def delete_booking(booking_id: int, booking_interface: DataInterface) -> DataObject:
+    return booking_interface.delete(booking_id)
